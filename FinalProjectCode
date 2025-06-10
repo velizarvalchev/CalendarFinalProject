@@ -1,0 +1,308 @@
+import javax.swing.*;
+import java.awt.*;
+import java.lang.reflect.Array;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.*;
+import java.io.*;
+import java.util.ArrayList;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+
+public class Main {
+    public static void main(String[] args) {
+        //Initialize calendar
+        Calendar calendar = new Calendar();
+        calendar.readFromFile("events.txt");
+
+        JFrame frame = new JFrame("Calendar App");
+        frame.setSize(800, 600);
+
+        JPanel panel = new JPanel();
+        panel.setLayout(new BorderLayout());
+
+        //Make the header's background grey
+        panel.setBackground(Color.decode("#4c5454"));
+
+        // Header
+        JLabel header = new JLabel("Calendar Event Tracker", SwingConstants.CENTER);
+        header.setForeground(Color.WHITE);
+        header.setFont(new Font("Arial", Font.BOLD, 32));
+
+        //Adding header at the top
+        panel.add(header, BorderLayout.NORTH);
+
+        // Output Text Area
+        JTextArea output = new JTextArea();
+        output.setEditable(false);
+        output.setFont(new Font("Arial", Font.PLAIN, 20));
+        JScrollPane scroll = new JScrollPane(output);
+
+        //Adding the output area in the middle
+        panel.add(scroll, BorderLayout.CENTER);
+
+        // Input Panel
+        JPanel inputPanel = new JPanel(new GridLayout(7, 2, 5, 5));
+        inputPanel.setBackground(Color.decode("#ffffff"));
+
+        //TextFields for event details
+        JTextField title = new JTextField();
+        title.setFont(new Font("Arial", Font.PLAIN, 24));
+        JTextField location = new JTextField();
+        location.setFont(new Font("Arial", Font.PLAIN, 24));
+        JTextField description = new JTextField();
+        description.setFont(new Font("Arial", Font.PLAIN, 24));
+        JTextField date = new JTextField("dd.MM.yyyy");
+        date.setFont(new Font("Arial", Font.PLAIN, 24));
+        JTextField search = new JTextField();
+        search.setFont(new Font("Arial", Font.PLAIN, 24));
+
+        //buttons for all functions
+        JButton add = new JButton("Add Event");
+        JButton view = new JButton("View Events");
+        JButton searchB = new JButton("Search");
+        JButton delete = new JButton("Delete Event");
+        JButton clear = new JButton("Clear Events");
+
+        //Making the colors of the buttons a shade of red
+        Color primary = Color.decode("#FF715B");
+        add.setBackground(primary);
+        view.setBackground(primary);
+        searchB.setBackground(primary);
+        delete.setBackground(primary);
+        clear.setBackground(primary);
+
+        //Changing the text font for each of the buttons
+        add.setFont(new Font("Arial", Font.BOLD, 24));
+        view.setFont(new Font("Arial", Font.BOLD, 24));
+        searchB.setFont(new Font("Arial", Font.BOLD, 24));
+        delete.setFont(new Font("Arial", Font.BOLD, 24));
+        clear.setFont(new Font("Arial", Font.BOLD, 24));
+
+        //Labels for all TextFields
+        JLabel titleL = new JLabel("Title:");
+        titleL.setFont(new Font("Arial", Font.BOLD, 24));
+        inputPanel.add(titleL);
+        inputPanel.add(title);
+        JLabel locationL = new JLabel("Location:");
+        locationL.setFont(new Font("Arial", Font.BOLD, 24));
+        inputPanel.add(locationL);
+        inputPanel.add(location);
+        JLabel descriptionL = new JLabel("Description:");
+        descriptionL.setFont(new Font("Arial", Font.BOLD, 24));
+        inputPanel.add(descriptionL);
+        inputPanel.add(description);
+        JLabel dateL = new JLabel("Date (dd.MM.yyyy):");
+        dateL.setFont(new Font("Arial", Font.BOLD, 24));
+        inputPanel.add(dateL);
+        inputPanel.add(date);
+        JLabel searchL = new JLabel("Search by Title:");
+        searchL.setFont(new Font("Arial", Font.BOLD, 24));
+        inputPanel.add(searchL);
+        inputPanel.add(search);
+        inputPanel.add(add);
+        inputPanel.add(view);
+        inputPanel.add(delete);
+        inputPanel.add(clear);
+
+        //Adding the inputPanel at the bottom and the search button on the right
+        panel.add(inputPanel, BorderLayout.SOUTH);
+        panel.add(searchB, BorderLayout.EAST);
+
+        frame.add(panel);
+
+        //Action Listeners
+        add.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                try {
+                    String title1 = title.getText().trim();
+                    String location1 = location.getText().trim();
+                    String description1 = description.getText().trim();
+                    Date date1 = new SimpleDateFormat("dd.MM.yyyy").parse(date.getText().trim());
+
+                    Event event = new Event(title1, location1, description1, date1);
+                    calendar.addEvent(event);
+                    calendar.writeToFile("events.txt");
+
+                    output.setText("Event added!\n" + event.Stringformat());
+                    title.setText("");
+                    location.setText("");
+                    date.setText("dd.MM.yyyy");
+                    description.setText("");
+                    search.setText("");
+
+                }catch(ParseException e1) {
+
+                }
+            }
+        });
+
+
+        view.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                output.setText("");
+                int count=0;
+                for (Event event : calendar.readFromFile("events.txt")) {
+                    output.append(event.Stringformat() + "\n\n");
+                    count++;
+                }
+                if(count==0){
+                    output.setText("No events found!");
+                }else if(count==1){
+                    output.append(count + " event found!");
+                }else{
+                    output.append(count + " events found!");
+                }
+                title.setText("");
+                location.setText("");
+                date.setText("dd.MM.yyyy");
+                description.setText("");
+                search.setText("");
+            }
+        });
+
+        searchB.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                String keyword = search.getText().trim();
+                ArrayList<Event> results = calendar.searchByTitle(keyword);
+                output.setText("Search Results:\n");
+                for (Event event : results) {
+                    output.append(event.Stringformat() + "\n");
+                }
+                title.setText("");
+                location.setText("");
+                date.setText("dd.MM.yyyy");
+                description.setText("");
+                search.setText("");
+            }
+        });
+
+        delete.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                String titleToDelete = title.getText().trim();
+                if (titleToDelete.isEmpty()) {
+                    output.setText("Please enter the Title of the event you want to delete!");
+                    return;
+                }
+                boolean deleted = calendar.deleteEvent(titleToDelete);
+                if (deleted) {
+                    calendar.writeToFile("events.txt");
+                    output.setText("Event with title \"" + titleToDelete + "\" deleted.");
+                } else {
+                    output.setText("No event found with title \"" + titleToDelete + "\".");
+                }
+                title.setText("");
+                location.setText("");
+                date.setText("dd.MM.yyyy");
+                description.setText("");
+                search.setText("");
+            }
+        });
+        clear.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                calendar.clearEvents();
+                calendar.writeToFile("events.txt");
+                output.setText("All events have been cleared!");
+                title.setText("");
+                location.setText("");
+                date.setText("dd.MM.yyyy");
+                description.setText("");
+                search.setText("");
+            }
+        });
+        frame.setVisible(true);
+    }
+}
+//Event Class for each individual event
+class Event implements Serializable {
+    //Encapsulation
+    private String title;
+    private String location;
+    private String description;
+    private Date date;
+
+    public Event(String title, String location, String description, Date date) {
+        this.title = title;
+        this.location = location;
+        this.description = description;
+        this.date = date;
+    }
+
+    public String getTitle() {
+        return title;
+    }
+
+    public String getLocation() {
+        return location;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public Date getDate() {
+        return date;
+    }
+
+    public String Stringformat() {
+        SimpleDateFormat sdf = new SimpleDateFormat("dd-MM-yyyy"); // date format changed here too
+        return "Title: "+title+"\nLocation: "+location+"\nDescription: "+description+"\nDate: "+sdf.format(date);
+    }
+}
+
+//Calendar class
+class Calendar implements Serializable {
+    //Encapsulation
+    private ArrayList<Event> events;
+
+    public Calendar() {
+        events = new ArrayList<>();
+    }
+
+    public void addEvent(Event event) {
+        events.add(event);
+    }
+
+
+    public ArrayList<Event> searchByTitle(String target) {
+        ArrayList<Event> result = new ArrayList<>();
+        for (Event e : events) {
+            if (e.getTitle().equalsIgnoreCase(target)) {
+                result.add(e);
+            }
+        }
+        return result;
+    }
+
+    public boolean deleteEvent(String title) {
+        for (Event e: events) {
+            if (e.getTitle().equalsIgnoreCase(title)) {
+                events.remove(e);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public void writeToFile(String filename) {
+        try (ObjectOutputStream os = new ObjectOutputStream(new FileOutputStream(filename))) {
+            os.writeObject(events);
+        } catch (IOException e) {
+            System.out.println(e.getMessage());
+        }
+    }
+
+    public ArrayList<Event> readFromFile(String filename) {
+        try (ObjectInputStream is = new ObjectInputStream(new FileInputStream(filename))) {
+            events = (ArrayList<Event>) is.readObject();
+            return events;
+
+        } catch (IOException | ClassNotFoundException e) {
+            ArrayList<Event> EmptyList = new ArrayList<Event>();
+            return EmptyList;
+        }
+    }
+    public void clearEvents() {
+        events.clear();
+    }
+}
